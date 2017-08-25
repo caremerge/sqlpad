@@ -56,6 +56,13 @@ router.post('/api/query-result', mustBeAuthenticated, function (req, res) {
     queryName: req.body.queryName,
     queryText: req.body.queryText
   }
+  var query = new Query({
+    name: req.body.queryName || 'No Name Query',
+    queryText: req.body.queryText,
+    connectionId: req.body.connectionId,
+    createdBy: req.user.email,
+    modifiedBy: req.user.email
+  });
   getQueryResult(data, function (err, queryResult) {
     if (err) {
       console.error(err)
@@ -64,6 +71,7 @@ router.post('/api/query-result', mustBeAuthenticated, function (req, res) {
         error: err.toString()
       })
     }
+    query.pushQueryToSlackIfSetup('true')
     return res.send({
       queryResult: queryResult
     })

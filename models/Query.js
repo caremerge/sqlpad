@@ -77,17 +77,24 @@ Query.prototype.save = function QuerySave (callback) {
   }
 }
 
-Query.prototype.pushQueryToSlackIfSetup = function () {
+Query.prototype.pushQueryToSlackIfSetup = function (run) {
   const SLACK_WEBHOOK = config.get('slackWebhook')
   if (SLACK_WEBHOOK) {
     const PUBLIC_URL = config.get('publicUrl')
     const BASE_URL = config.get('baseUrl')
+    var body = '';
+    if(run === 'true') {
+      body = 'New Query run by ' + this.modifiedBy + ' on SQLPad ```' + this.queryText + '```'
+    } else {
+      body = 'New Query <' + PUBLIC_URL + BASE_URL +
+      '/queries/' + this._id + '|' + this.name +
+      '> saved by ' + this.modifiedBy + ' on SQLPad ```' +
+      this.queryText + '```'
+    }
+    console.log('# NEWQUERY:', body);
     var options = {
       method: 'post',
-      body: {'text': 'New Query <' + PUBLIC_URL + BASE_URL +
-                            '/queries/' + this._id + '|' + this.name +
-                            '> saved by ' + this.modifiedBy + ' on SQLPad ```' +
-                            this.queryText + '```'},
+      body: {'text': body},
       json: true,
       url: SLACK_WEBHOOK
     }
