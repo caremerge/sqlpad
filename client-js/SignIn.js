@@ -1,80 +1,102 @@
 import React from 'react'
+import { Redirect } from 'react-router-dom'
 import Alert from 'react-s-alert'
-import navigateToClickHandler from './utilities/navigateToClickHandler'
+import { Link } from 'react-router-dom'
 import fetchJson from './utilities/fetch-json.js'
-import page from 'page'
+import GooglePlusIcon from 'react-icons/lib/fa/google-plus'
 
 class SignIn extends React.Component {
   state = {
     email: '',
-    password: ''
-  };
+    password: '',
+    redirect: false
+  }
 
-  onEmailChange = (e) => {
-    this.setState({email: e.target.value})
-  };
+  componentDidMount() {
+    document.title = 'SQLPad - Sign In'
+  }
 
-  onPasswordChange = (e) => {
-    this.setState({password: e.target.value})
-  };
+  onEmailChange = e => {
+    this.setState({ email: e.target.value })
+  }
 
-  signIn = (e) => {
+  onPasswordChange = e => {
+    this.setState({ password: e.target.value })
+  }
+
+  signIn = e => {
     e.preventDefault()
-    fetchJson('POST', this.props.config.baseUrl + '/api/signin', this.state)
-      .then((json) => {
-        if (json.error) return Alert.error('Username or password incorrect')
-        page('/')
-      })
-      .catch((ex) => {
-        Alert.error('Username or Password incorrect')
-        console.error(ex)
-      })
-  };
+    fetchJson('POST', '/api/signin', this.state).then(json => {
+      if (json.error) return Alert.error('Username or password incorrect')
+      this.setState({ redirect: true })
+    })
+  }
 
-  render () {
+  render() {
+    const { passport, smtpConfigured, config } = this.props
+    const { redirect } = this.state
+    if (redirect) {
+      return <Redirect push to="/" />
+    }
     const localForm = (
       <div>
-        <form className='form-signin' onSubmit={this.signIn}>
+        <form onSubmit={this.signIn}>
           <input
-            name='email'
-            type='email'
-            className='form-control top-field'
-            placeholder='Email address'
+            name="email"
+            type="email"
+            className="form-control mt2"
+            placeholder="Email address"
             onChange={this.onEmailChange}
-            required />
+            required
+          />
           <input
-            name='password'
-            type='password'
-            className='form-control bottom-field'
-            placeholder='Password'
+            name="password"
+            type="password"
+            className="form-control mt2"
+            placeholder="Password"
             onChange={this.onPasswordChange}
-            required />
-          <br />
-          <button onClick={this.signIn} className='btn btn-lg btn-primary btn-block' type='submit'>Sign in</button>
+            required
+          />
+          <button
+            onClick={this.signIn}
+            className="btn btn-primary btn-block mt4"
+            type="submit"
+          >
+            Sign in
+          </button>
         </form>
-        <div className='form-signin-footer'>
-          <p>
-            <a onClick={navigateToClickHandler('/signup')} href='#signup'>Sign Up</a>
-            {(this.props.smtpConfigured ? <a style={{marginLeft: 50}} onClick={navigateToClickHandler('/forgot-password')} href='#forgot' >Forgot Password</a> : null)}
-          </p>
+        <div className="tc mt3">
+          <Link to="/signup">Sign Up</Link>
+          {smtpConfigured ? (
+            <Link className="ml5" to="/forgot-password">
+              Forgot Password
+            </Link>
+          ) : null}
         </div>
       </div>
     )
     const googleForm = (
       <div>
-        <a href={this.props.config.baseUrl + '/auth/google'}>
-          <button className='btn btn-lg btn-danger btn-block'>
-            <i className='fa fa-google-plus' /> Log in with Google
+        <a href={config.baseUrl + '/auth/google'}>
+          <button className="btn btn-danger btn-block mt3">
+            <GooglePlusIcon
+              style={{
+                width: '22px',
+                height: '22px',
+                marginRight: '12px',
+                marginBottom: '2px'
+              }}
+            />
+            Log in with Google
           </button>
         </a>
       </div>
     )
     return (
-      <div className='signin'>
-        <h2>SQLPad</h2>
-        {('local' in this.props.passport.strategies ? localForm : null)}
-        {('google' in this.props.passport.strategies ? googleForm : null)}
-        <Alert stack={{limit: 3}} position='bottom-right' />
+      <div className="pt5 measure center" style={{ width: '300px' }}>
+        <h1 className="f2 tc">SQLPad</h1>
+        {'local' in passport.strategies ? localForm : null}
+        {'google' in passport.strategies ? googleForm : null}
       </div>
     )
   }

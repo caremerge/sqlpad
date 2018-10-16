@@ -1,43 +1,34 @@
 # SQLPad
 
-A web app for writing and running SQL queries and visualizing the results. Supports Postgres, MySQL, SQL Server, Crate, Vertica, and Presto. Written in Node.js.
+[![Build Status](https://travis-ci.org/rickbergfalk/sqlpad.svg?branch=master)](https://travis-ci.org/rickbergfalk/sqlpad)
 
-![SQLPad Query List](http://rickbergfalk.github.io/sqlpad/images/screenshots/queries.png)
-![SQLPad Query Editor](http://rickbergfalk.github.io/sqlpad/images/screenshots/query-editor.png)
-![SQLPad Chart Editor](http://rickbergfalk.github.io/sqlpad/images/screenshots/chart-line.png)
+A web app for writing and running SQL queries and visualizing the results. Supports Postgres, MySQL, SQL Server, Crate, Vertica, Presto, and SAP HANA. Other databases potentially supported via [unix odbc support](https://github.com/rickbergfalk/sqlpad/wiki/ODBC). 
 
+## Heads up! New v3 branch has been started for new/breaking development
 
-## Installation and Usage
+If you are working on a feature, or want to run the cutting edge, look to that branch. Expect breakage until things are finalized. See [v3 branch](https://github.com/rickbergfalk/sqlpad/tree/v3) for more details.
+
+## Installation, Usage, Screenshots
 
 Visit project page at [http://rickbergfalk.github.io/sqlpad/](http://rickbergfalk.github.io/sqlpad/).
 
-Quickstart: 
+![SQLPad Query Editor](http://rickbergfalk.github.io/sqlpad/images/screenshots/query-editor.png)
 
-```sh
-# Assuming node 6 or later is installed
-npm install sqlpad -g 
-sqlpad --help
-```
+## Using Docker Image
 
-To update sqlpad installed via npm run 
-```sh
-npm install sqlpad -g
-```
+The docker image runs on port 3000 and uses `/var/lib/sqlpad` for the embedded database directory.
 
+Some configuration is exposed via environment variables. See [configItems.js](https://github.com/rickbergfalk/sqlpad/blob/master/server/lib/config/configItems.js) for details on environment variables considered (`envVar` field).
+
+See [docker-validation](https://github.com/rickbergfalk/sqlpad/tree/master/docker-validation) folder for example docker-compose setup with SQL Server.
 
 ## Development
 
-**Using docker**
-```sh
-docker-compose run --rm web npm -i
-docker-compose up
-```
-
-**Locally**
-- Clone/download repo
-- Install node 6 or later
-- Install npm5
-- run `npm start` from command line 
+* Clone/download repo
+* Install node 6 or later (nvm recommended)
+* Install npm5 via `npm i npm -g`
+* Install npm modules by running `npm install`
+* run `npm start`
 
 At this point you should have both backend and front-end development servers running.
 
@@ -48,14 +39,32 @@ Both front-end/back-end should auto-refresh/auto-reload on file change.
 
 To build front-end production files run `npm run build`.
 
-See [wiki](https://github.com/rickbergfalk/sqlpad/wiki/Development-Guide) for additional development details and project information.
+### Databases
 
+A docker-compose file with is provided to provide an empty postgres database to test with.
+If you have docker installed you can do the following:
 
-## Tips
+```sh
+# Bring database containers up in background
+docker-compose up -d
 
-If you have highlighted just part of your query, only that part will be executed when you click Run Query.
+# To bring database down
+docker-compose down
 
+# To remove dangling containers volumes etc
+docker system prune
+```
 
-## License 
+To connect to the database within SQLPad during development use the following settings:
+
+```
+driver: postgres
+host: localhost
+database: sqlpad
+username: sqlpad
+password: sqlpad
+```
+
+## License
 
 MIT

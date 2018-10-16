@@ -1,172 +1,186 @@
 import React from 'react'
+import {
+  BrowserRouter as Router,
+  Route,
+  Redirect,
+  Switch
+} from 'react-router-dom'
 import Alert from 'react-s-alert'
-import Navbar from 'react-bootstrap/lib/Navbar'
-import Nav from 'react-bootstrap/lib/Nav'
-import NavItem from 'react-bootstrap/lib/NavItem'
-import NavDropdown from 'react-bootstrap/lib/NavDropdown'
-import MenuItem from 'react-bootstrap/lib/MenuItem'
-import Modal from 'react-bootstrap/lib/Modal'
-import Button from 'react-bootstrap/lib/Button'
-import Popover from 'react-bootstrap/lib/Popover'
-import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger'
-import navigateToClickHandler from './utilities/navigateToClickHandler'
 import fetchJson from './utilities/fetch-json.js'
-import page from 'page'
+import UsersView from './users/UsersView'
+import ConnectionsView from './connections/ConnectionsView.js'
+import ConfigurationView from './configuration/ConfigurationView'
+import QueriesView from './queries/QueriesView'
+import QueryEditor from './queryEditor/QueryEditor.js'
+import SignIn from './SignIn.js'
+import SignUp from './SignUp.js'
+import ForgotPassword from './ForgotPassword.js'
+import PasswordReset from './PasswordReset.js'
+import PasswordResetRequested from './PasswordResetRequested.js'
+import QueryTableOnly from './QueryTableOnly.js'
+import QueryChartOnly from './QueryChartOnly.js'
+import NotFound from './NotFound.js'
+import Authenticated from './Authenticated'
 
 class App extends React.Component {
-  constructor (props) {
-    super(props)
-    this.state = {
-      showAboutModal: false,
-      currentUser: {},
-      version: {},
-      passport: {},
-      config: {}
-    }
-    this.openAboutModal = this.openAboutModal.bind(this)
-    this.closeAboutModal = this.closeAboutModal.bind(this)
-    this.signout = this.signout.bind(this)
-  }
+  state = {}
 
-  openAboutModal () {
-    this.setState({showAboutModal: true})
-  }
-
-  closeAboutModal () {
-    this.setState({showAboutModal: false})
-  }
-
-  componentDidMount () {
-    fetchJson('GET', this.props.config.baseUrl + '/api/app')
-      .then((json) => {
-        // TODO - would it be good to adopt this all-in-one app route or is this bad?
-        this.setState({
-          currentUser: json.currentUser,
-          version: json.version,
-          passport: json.passport,
-          config: json.config
-        })
-      })
-      .catch((ex) => {
-        console.error(ex.toString())
-        Alert.error('Something is broken')
-      })
-  }
-
-  signout () {
-    fetchJson('GET', this.props.config.baseUrl + '/api/signout')
-      .then((json) => {
-        page('/')
-      })
-      .catch((ex) => {
-        console.error(ex.toString())
-        Alert.error('Problem signing out')
-      })
-  }
-
-  render () {
-    const popover = (
-      <Popover id='modal-popover' title={'Update Available (' + this.state.version.updateType + ')'} >
-        Installed Version: {this.state.version.current}
-        <br />
-        Latest: {this.state.version.latest}
-      </Popover>
-    )
-    const updateNotification = () => {
-      if (this.state.version.updateAvailable) {
-        return (
-          <OverlayTrigger overlay={popover} placement='bottom'>
-            <NavItem eventKey={9}>
-              <span className='glyphicon glyphicon-upload' aria-hidden='true' />
-            </NavItem>
-          </OverlayTrigger>
-        )
+  refreshAppContext = () => {
+    return fetchJson('GET', 'api/app').then(json => {
+      // Assign config.baseUrl to global
+      // It doesn't change and is needed for fetch requests
+      // This allows us to simplify the fetch() call
+      if (!json.config) {
+        return
       }
-    }
-    const userMenu = () => {
-      if (this.props.currentUser.role === 'admin') {
-        return (
-          <NavDropdown eventKey={3} title={this.props.currentUser.email.split('@')[0]} id='user-nav-dropdown'>
-            <MenuItem eventKey={3.1} onClick={navigateToClickHandler('/connections')} >Connections</MenuItem>
-            <MenuItem eventKey={3.2} onClick={navigateToClickHandler('/users')} >Users</MenuItem>
-            <MenuItem eventKey={3.3} onClick={navigateToClickHandler('/config-values')} >Configuration</MenuItem>
-            <MenuItem divider />
-            <MenuItem eventKey={3.4} onClick={this.openAboutModal} >About SQLPad</MenuItem>
-            <MenuItem divider />
-            <MenuItem eventKey={3.5} onClick={this.signout}>Sign Out</MenuItem>
-          </NavDropdown>
-        )
-      } else {
-        return (
-          <NavDropdown eventKey={3} title={this.props.currentUser.email.split('@')[0]} id='user-nav-dropdown'>
-            <MenuItem eventKey={3.4} onClick={this.openAboutModal} >About SQLPad</MenuItem>
-            <MenuItem divider />
-            <MenuItem eventKey={3.5} onClick={this.signout}>Sign Out</MenuItem>
-          </NavDropdown>
-        )
-      }
-    }
-    return (
-      <div>
-        <Navbar inverse fluid fixedTop>
-          <Nav>
-            <NavItem eventKey={1} onClick={navigateToClickHandler('/queries')} >Queries</NavItem>
-            {/*
-              NOTE: /queries/new is *NOT* handled by page.js.
-              clicking new while on new creates weirdness that needs to be worked out.
-            */}
-            <NavItem eventKey={2} href={this.props.config.baseUrl + '/queries/new'}>New Query</NavItem>
-          </Nav>
-          <Nav pullRight>
-            {updateNotification()}
-            {userMenu()}
-          </Nav>
-        </Navbar>
-        <div style={{position: 'absolute', left: 0, right: 0, bottom: 0, top: 50}}>
-          {this.props.children}
+      window.BASE_URL = json.config.baseUrl
+      this.setState({
+        config: json.config,
+        smtpConfigured: json.smtpConfigured,
+        googleAuthConfigured: json.googleAuthConfigured,
+        currentUser: json.currentUser,
+        passport: json.passport,
+        adminRegistrationOpen: json.adminRegistrationOpen,
+        version: json.version
+      })
+    })
+  }
+
+  componentDidMount() {
+    this.refreshAppContext()
+  }
+
+  render() {
+    const {
+      adminRegistrationOpen,
+      config,
+      currentUser,
+      smtpConfigured,
+      passport
+    } = this.state
+
+    // If there is no config a lot of the app is not functional
+    // Instead just load the Alert component so alerts can fire if needed
+    if (!config) {
+      return (
+        <div className="flex w-100">
+          <Alert stack={{ limit: 3 }} position="bottom-right" />
         </div>
-        <Alert stack={{limit: 3}} position='bottom-right' />
-        <Modal show={this.state.showAboutModal} onHide={this.closeAboutModal}>
-          <Modal.Header closeButton>
-            <Modal.Title>About SQLPad</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <p>
-              <strong>Version</strong>: {this.state.version.current}
-            </p>
-            <p>
-              <strong>Project Page</strong>:
-              {' '}
-              <a href='http://rickbergfalk.github.io/sqlpad/' target='_blank' rel='noopener noreferrer'>
-                http://rickbergfalk.github.io/sqlpad
-                {' '}
-                <span style={{marginLeft: 4}} className='glyphicon glyphicon-new-window' aria-hidden='true' />
-              </a>
-            </p>
-            <hr />
-            <ul className='nav nav-pills nav-justified'>
-              <li role='presentation'>
-                <a href='https://github.com/rickbergfalk/sqlpad/issues' target='_blank' rel='noopener noreferrer'>
-                  Submit an Issue <span className='glyphicon glyphicon-new-window' aria-hidden='true' />
-                </a>
-              </li>
-              <li role='presentation'>
-                <a href='https://github.com/rickbergfalk/sqlpad/blob/master/CHANGELOG.md' target='_blank' rel='noopener noreferrer'>
-                  Changelog <span className='glyphicon glyphicon-new-window' aria-hidden='true' />
-                </a>
-              </li>
-              <li role='presentation'>
-                <a href='https://github.com/rickbergfalk/sqlpad' target='_blank' rel='noopener noreferrer'>
-                  GitHub Repository <span className='glyphicon glyphicon-new-window' aria-hidden='true' />
-                </a>
-              </li>
-            </ul>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button onClick={this.closeAboutModal}>Close</Button>
-          </Modal.Footer>
-        </Modal>
-      </div>
+      )
+    }
+
+    return (
+      <Router basename={config.baseUrl}>
+        <div className="flex w-100">
+          <Switch>
+            <Route exact path="/" render={() => <Redirect to={'/queries'} />} />
+            <Route
+              exact
+              path="/queries"
+              render={props => <Authenticated component={QueriesView} />}
+            />
+            <Route
+              exact
+              path="/queries/:queryId"
+              render={({ match }) => (
+                <Authenticated
+                  queryId={match.params.queryId}
+                  component={QueryEditor}
+                />
+              )}
+            />
+            <Route
+              exact
+              path="/users"
+              render={() => (
+                <Authenticated admin={true} component={UsersView} />
+              )}
+            />
+            <Route
+              exact
+              path="/connections"
+              render={() => (
+                <Authenticated admin={true} component={ConnectionsView} />
+              )}
+            />
+            <Route
+              exact
+              path="/config-values"
+              render={() => (
+                <Authenticated admin={true} component={ConfigurationView} />
+              )}
+            />
+            <Route
+              exact
+              path="/query-table/:queryId"
+              render={({ match }) => (
+                <QueryTableOnly
+                  config={config}
+                  queryId={match.params.queryId}
+                />
+              )}
+            />
+            <Route
+              exact
+              path="/query-chart/:queryId"
+              render={({ match }) => (
+                <QueryChartOnly
+                  config={config}
+                  queryId={match.params.queryId}
+                />
+              )}
+            />
+            <Route
+              exact
+              path="/signin"
+              render={() => (
+                <SignIn
+                  config={config}
+                  smtpConfigured={smtpConfigured}
+                  passport={passport}
+                />
+              )}
+            />
+            <Route
+              exact
+              path="/signup"
+              render={() => (
+                <SignUp
+                  config={config}
+                  adminRegistrationOpen={adminRegistrationOpen}
+                />
+              )}
+            />
+            <Route
+              exact
+              path="/forgot-password"
+              render={() => <ForgotPassword config={config} />}
+            />
+            <Route
+              exact
+              path="/password-reset/:passwordResetId"
+              render={({ match }) => (
+                <PasswordReset
+                  passwordResetId={match.params.passwordResetId}
+                  config={config}
+                  adminRegistrationOpen={adminRegistrationOpen}
+                />
+              )}
+            />
+            <Route
+              exact
+              path="/password-reset"
+              render={() => <PasswordResetRequested />}
+            />
+            <Route
+              render={() => (
+                <NotFound config={config} currentUser={currentUser} />
+              )}
+            />
+          </Switch>
+          <Alert stack={{ limit: 3 }} position="bottom-right" />
+        </div>
+      </Router>
     )
   }
 }
