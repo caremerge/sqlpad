@@ -1,0 +1,9 @@
+language: node_js
+cache: npm
+dist: trusty
+node_js:
+  - 8.12.0
+script: npm run test
+#after_success:
+  # Send coverage data to coveralls.
+#  - npm run test:cover:CI

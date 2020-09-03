@@ -45,7 +45,8 @@
     "start-server-dev": "node-dev server.js --dir ./db --port 3010 --debug",
     "start": "concurrently \"npm run start-server-dev\" \"npm run start-client-dev\"",
     "test-client": "react-scripts test --env=jsdom",
-    "test": "standard && mocha --recursive"
+    "test": "standard && mocha --recursive",
+    "test:cover:CI": "npm run test:CI -- --coverage && cat ./coverage/lcov.info | node_modules/coveralls/bin/coveralls.js"
   },
   "dependencies": {
     "async": "^2.0.1",
