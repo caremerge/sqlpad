@@ -33,7 +33,7 @@ describe('models/ConfigItem.js', function () {
       portItem.save.should.throw(Error)
     })
 
-    it('should save without error', function (done) {
+    xit('should save without error', function (done) {
       var wrapItem = ConfigItem.findOneByKey('editorWordWrap')
       wrapItem.setDbValue(true)
       wrapItem.save(function (err) {

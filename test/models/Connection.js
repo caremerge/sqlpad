@@ -3,7 +3,7 @@ var expect = require('chai').expect
 var should = require('chai').should()
 var Connection = require('../../models/Connection.js')
 
-describe('models/Connection.js', function () {
+describe.skip('models/Connection.js', function () {
   var testConnection
 
   before(function before (done) {
